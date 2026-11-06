@@ -44,7 +44,7 @@
 
   <main class="px-4 py-5 flex-1 max-w-md mx-auto w-full">
 
-    <!-- HOME SCREEN (3 ICONS) -->
+    <!-- HOME SCREEN (2 ICONS) -->
     <div id="homeScreen" class="space-y-4">
       
       <!-- CARD 1: SUBMISSION -->
@@ -59,18 +59,7 @@
         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </div>
 
-      <!-- CARD 2: RETURN -->
-      <div class="glass-card rounded-3xl p-5 flex items-center space-x-4 opacity-90">
-        <div class="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-        </div>
-        <div class="flex-1">
-          <h2 class="text-base font-bold text-gray-900">ARTWORK RETURN</h2>
-          <span class="inline-block mt-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">EMPTY; SHOW NOW</span>
-        </div>
-      </div>
-
-      <!-- CARD 3: STATUS -->
+      <!-- CARD 2: STATUS -->
       <div onclick="showStatusScreen()" class="glass-card rounded-3xl p-5 flex items-center space-x-4 cursor-pointer active:scale-98 transition transform">
         <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -120,7 +109,7 @@
       <!-- SUMMARY METRICS CARDS -->
       <div class="grid grid-cols-2 gap-3">
         <div class="glass-card rounded-2xl p-4 text-center">
-          <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">TOTAL SUBMITTED</p>
+          <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">TOTAL STUDENTS</p>
           <h3 id="statTotalStudents" class="text-2xl font-bold text-emerald-600 mt-0.5">0</h3>
         </div>
         <div class="glass-card rounded-2xl p-4 text-center">
@@ -136,7 +125,7 @@
       </div>
 
       <!-- STATUS LIST -->
-      <div id="statusList" class="space-y-2"></div>
+      <div id="statusList" class="space-y-3"></div>
 
     </div>
 
@@ -153,7 +142,6 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3bBSCXsgrUkGejcOLcZshWKZvoc_YPC5ITpZXMNxs4eR9HFdhY66ETrJjLigJEBcimg/exec';
 
     let studentsData = [];
-    const submittedState = {};
 
     function showHomeScreen() {
       document.getElementById('homeScreen').classList.remove('hidden');
@@ -244,9 +232,14 @@
         const rawName = item["Student Name"] || item["STUDENT NAME"] || item["Name"] || "N/A";
         const rawClass = item["Class"] || item["CLASS"] || "N/A";
         const rawPhoto = item["Photo Link"] || item["Passport Photo URL"] || "";
-        const canvasCount = parseInt(item["Total Canvas Submissions"] || "0", 10);
+        const rawRemarks = item["Remarks"] || item["Artwork Return Status"] || "NONE";
         
-        totalCanvases += isNaN(canvasCount) ? 0 : canvasCount;
+        const isReturned = String(rawRemarks).trim().toUpperCase() === "RETURNED";
+        
+        const rawCanvasCount = parseInt(item["Total Canvas Submissions"] || "0", 10);
+        const displayCanvasCount = isReturned ? 0 : (isNaN(rawCanvasCount) ? 0 : rawCanvasCount);
+        
+        totalCanvases += displayCanvasCount;
 
         const name = String(rawName).toUpperCase();
         const studentClass = String(rawClass).toUpperCase();
@@ -254,22 +247,36 @@
         const serialNo = idx + 1;
 
         const card = document.createElement('div');
-        card.className = "glass-card rounded-2xl px-3 py-2.5 flex items-center justify-between space-x-3";
+        card.className = "glass-card rounded-2xl p-3.5 flex flex-col space-y-3";
         
         card.innerHTML = `
-          <div class="flex items-center space-x-2.5 min-w-0">
-            <span class="text-xs font-bold text-gray-400 w-5 text-right shrink-0">#${serialNo}</span>
-            <div class="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden relative flex items-center justify-center border border-white shadow-sm">
-              ${photoUrl ? `<img src="${photoUrl}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-[9px]\' font-bold text-gray-500\'>IMG</span>';">` : `<span class="text-[9px] font-bold text-gray-500">N/A</span>`}
+          <div class="flex items-center justify-between space-x-3">
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <span class="text-xs font-bold text-gray-400 w-5 text-right shrink-0">#${serialNo}</span>
+              <div class="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden relative flex items-center justify-center border border-white shadow-sm">
+                ${photoUrl ? `<img src="${photoUrl}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-[9px] font-bold text-gray-500\'>IMG</span>';">` : `<span class="text-[9px] font-bold text-gray-500">N/A</span>`}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center space-x-1.5">
+                  <h3 class="text-xs font-bold text-gray-900 truncate">${name}</h3>
+                  ${isReturned ? `<span class="text-[8px] font-extrabold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200">RETURNED</span>` : ''}
+                </div>
+                <p class="text-[10px] font-semibold text-gray-500 truncate">CLASS: ${studentClass}</p>
+              </div>
             </div>
-            <div class="min-w-0">
-              <h3 class="text-xs font-bold text-gray-900 truncate">${name}</h3>
-              <p class="text-[10px] font-semibold text-gray-500 truncate">CLASS: ${studentClass}</p>
+            
+            <div class="${isReturned ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-blue-50 border-blue-200 text-blue-700'} border px-2.5 py-1 rounded-xl text-center shrink-0">
+              <span class="text-xs font-extrabold">${displayCanvasCount}</span>
+              <span class="block text-[8px] font-bold uppercase leading-none mt-0.5 opacity-80">CANVASES</span>
             </div>
           </div>
-          <div class="shrink-0 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-xl text-center">
-            <span class="text-xs font-extrabold text-blue-700">${canvasCount}</span>
-            <span class="block text-[8px] font-bold text-blue-500 uppercase leading-none mt-0.5">CANVASES</span>
+
+          <!-- ACTION BUTTONS: RETURN ONLY (RESUBMIT REMOVED) -->
+          <div class="flex items-center pt-2 border-t border-gray-100/60">
+            <button id="status-return-btn-${idx}" onclick="handleStatusAction(${idx}, '${encodeURIComponent(name)}', '${encodeURIComponent(studentClass)}', '${encodeURIComponent(rawPhoto)}', 'RETURN')" 
+                    class="w-full py-1.5 bg-amber-600 text-white font-bold text-[10px] rounded-xl shadow-sm active:scale-95 transition">
+              RETURN
+            </button>
           </div>
         `;
         container.appendChild(card);
@@ -277,6 +284,43 @@
 
       document.getElementById('statTotalStudents').innerText = totalStudents;
       document.getElementById('statTotalCanvases').innerText = totalCanvases;
+    }
+
+    function handleStatusAction(idx, encodedName, encodedClass, encodedPhoto, actionType) {
+      const name = decodeURIComponent(encodedName);
+      const studentClass = decodeURIComponent(encodedClass);
+      const photoLink = decodeURIComponent(encodedPhoto);
+
+      const btn = document.getElementById(`status-return-btn-${idx}`);
+      const originalText = btn.innerText;
+      btn.disabled = true;
+      btn.innerText = 'SENDING...';
+
+      const payload = {
+        "Student Name": name,
+        "Class": studentClass,
+        "Total Canvas Submissions": 0,
+        "Photo Link": photoLink,
+        "Action Type": actionType,
+        "Remarks": 'RETURNED'
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        btn.innerText = 'DONE';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerText = originalText;
+          fetchStatusData();
+        }, 1200);
+      }).catch(() => {
+        btn.disabled = false;
+        btn.innerText = 'RETRY';
+      });
     }
 
     function filterStudents() {
@@ -327,8 +371,6 @@
         const card = document.createElement('div');
         card.className = "glass-card rounded-2xl p-4 flex flex-col space-y-3";
         
-        const isSubmitted = !!submittedState[name];
-        
         card.innerHTML = `
           <div class="flex items-center space-x-3">
             <div class="w-14 h-14 rounded-full bg-gray-200 shrink-0 overflow-hidden relative flex items-center justify-center border-2 border-white shadow-sm">
@@ -347,10 +389,16 @@
               <button onclick="updateCanvas('${name}', 1)" class="w-8 h-8 rounded-xl bg-gray-200 text-gray-800 font-bold flex items-center justify-center active:scale-90 transition">+</button>
             </div>
             
-            <button id="btn-${idx}" onclick="submitSingleStudent(${idx}, '${encodeURIComponent(name)}', '${encodeURIComponent(studentClass)}', '${encodeURIComponent(rawPhoto)}')" 
-                    class="px-4 py-2 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition ${isSubmitted ? 'bg-slate-700' : 'bg-blue-600'}">
-              ${isSubmitted ? 'RESUBMIT' : 'SUBMIT'}
-            </button>
+            <div class="flex items-center space-x-2">
+              <button id="submit-btn-${idx}" onclick="submitOrResubmitStudent(${idx}, '${encodeURIComponent(name)}', '${encodeURIComponent(studentClass)}', '${encodeURIComponent(rawPhoto)}', 'SUBMIT')" 
+                      class="px-3 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition">
+                SUBMIT
+              </button>
+              <button id="resubmit-btn-${idx}" onclick="submitOrResubmitStudent(${idx}, '${encodeURIComponent(name)}', '${encodeURIComponent(studentClass)}', '${encodeURIComponent(rawPhoto)}', 'RESUBMIT')" 
+                      class="px-3 py-2 bg-slate-700 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition">
+                RESUBMIT
+              </button>
+            </div>
           </div>
         `;
         container.appendChild(card);
@@ -372,22 +420,26 @@
       }
     }
 
-    function submitSingleStudent(idx, encodedName, encodedClass, encodedPhoto) {
+    function submitOrResubmitStudent(idx, encodedName, encodedClass, encodedPhoto, actionType) {
       const name = decodeURIComponent(encodedName);
       const studentClass = decodeURIComponent(encodedClass);
       const photoLink = decodeURIComponent(encodedPhoto);
       const count = document.getElementById(`canvas-val-${idx}`).innerText;
-      const btn = document.getElementById(`btn-${idx}`);
+      
+      const targetBtnId = actionType === 'SUBMIT' ? `submit-btn-${idx}` : `resubmit-btn-${idx}`;
+      const btn = document.getElementById(targetBtnId);
+      const originalText = btn.innerText;
 
       btn.disabled = true;
       btn.innerText = 'SENDING...';
-      btn.className = "px-4 py-2 bg-gray-400 text-white font-bold text-xs rounded-xl";
 
       const payload = {
         "Student Name": name,
         "Class": studentClass,
         "Total Canvas Submissions": count,
-        "Photo Link": photoLink
+        "Photo Link": photoLink,
+        "Action Type": actionType,
+        "Remarks": actionType
       };
 
       fetch(SCRIPT_URL, {
@@ -396,14 +448,14 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }).then(() => {
-        submittedState[name] = true;
         btn.disabled = false;
-        btn.innerText = 'RESUBMIT';
-        btn.className = "px-4 py-2 bg-slate-700 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition";
+        btn.innerText = 'DONE';
+        setTimeout(() => {
+          btn.innerText = originalText;
+        }, 1200);
       }).catch(() => {
         btn.disabled = false;
         btn.innerText = 'RETRY';
-        btn.className = "px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-xl";
       });
     }
   </script>
