@@ -71,14 +71,15 @@
       </div>
 
       <!-- CARD 3: STATUS -->
-      <div class="glass-card rounded-3xl p-5 flex items-center space-x-4 opacity-90">
+      <div onclick="showStatusScreen()" class="glass-card rounded-3xl p-5 flex items-center space-x-4 cursor-pointer active:scale-98 transition transform">
         <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <div class="flex-1">
           <h2 class="text-base font-bold text-gray-900">STATUS</h2>
-          <span class="inline-block mt-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">EMPTY; SHOW NOW</span>
+          <p class="text-xs font-semibold text-emerald-600 mt-0.5">TAP TO VIEW DASHBOARD</p>
         </div>
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </div>
 
     </div>
@@ -113,6 +114,32 @@
 
     </div>
 
+    <!-- STATUS SCREEN -->
+    <div id="statusScreen" class="hidden space-y-4">
+
+      <!-- SUMMARY METRICS CARDS -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="glass-card rounded-2xl p-4 text-center">
+          <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">TOTAL SUBMITTED</p>
+          <h3 id="statTotalStudents" class="text-2xl font-bold text-emerald-600 mt-0.5">0</h3>
+        </div>
+        <div class="glass-card rounded-2xl p-4 text-center">
+          <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">TOTAL CANVASES</p>
+          <h3 id="statTotalCanvases" class="text-2xl font-bold text-blue-600 mt-0.5">0</h3>
+        </div>
+      </div>
+
+      <!-- LOADER -->
+      <div id="statusLoader" class="py-12 text-center">
+        <div class="inline-block w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-xs font-bold text-gray-500 mt-3">FETCHING STATUS SHEET...</p>
+      </div>
+
+      <!-- STATUS LIST -->
+      <div id="statusList" class="space-y-2"></div>
+
+    </div>
+
   </main>
 
   <!-- FOOTER -->
@@ -122,6 +149,7 @@
 
   <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9MYoRpbaJg7oK3vqkTjfsm616eD9xvUeeE3DxTSzWCF5gCdBOdqfnQQbbwbnycXopvrScE5kg-3R6/pub?gid=0&single=true&output=csv';
+    const STATUS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3lrDFk-sqYYgF9EP_OqEEfsgXbrbUBOr-MLMZ6VCT4hd2jxUqiSEU2HdVodD7oY8Sc_AlVn3cDCDQ/pub?gid=0&single=true&output=csv';
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3bBSCXsgrUkGejcOLcZshWKZvoc_YPC5ITpZXMNxs4eR9HFdhY66ETrJjLigJEBcimg/exec';
 
     let studentsData = [];
@@ -130,16 +158,27 @@
     function showHomeScreen() {
       document.getElementById('homeScreen').classList.remove('hidden');
       document.getElementById('submissionScreen').classList.add('hidden');
+      document.getElementById('statusScreen').classList.add('hidden');
       document.getElementById('backBtn').classList.add('hidden');
       document.getElementById('appTitle').innerText = 'ART EXHIBITION TRACKER';
     }
 
     function showSubmissionScreen() {
       document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById('statusScreen').classList.add('hidden');
       document.getElementById('submissionScreen').classList.remove('hidden');
       document.getElementById('backBtn').classList.remove('hidden');
       document.getElementById('appTitle').innerText = 'SUBMISSION';
       if (studentsData.length === 0) fetchStudentData();
+    }
+
+    function showStatusScreen() {
+      document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById('submissionScreen').classList.add('hidden');
+      document.getElementById('statusScreen').classList.remove('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+      document.getElementById('appTitle').innerText = 'LIVE STATUS';
+      fetchStatusData();
     }
 
     function convertDriveUrl(url) {
@@ -174,6 +213,70 @@
           document.getElementById('loader').innerHTML = '<p class="text-xs font-bold text-red-500">ERROR LOADING DATA</p>';
         }
       });
+    }
+
+    function fetchStatusData() {
+      document.getElementById('statusLoader').classList.remove('hidden');
+      document.getElementById('statusList').innerHTML = '';
+
+      Papa.parse(STATUS_CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          document.getElementById('statusLoader').classList.add('hidden');
+          renderStatusCards(results.data);
+        },
+        error: function(err) {
+          document.getElementById('statusLoader').innerHTML = '<p class="text-xs font-bold text-red-500">ERROR LOADING STATUS DATA</p>';
+        }
+      });
+    }
+
+    function renderStatusCards(data) {
+      const container = document.getElementById('statusList');
+      container.innerHTML = '';
+
+      let totalStudents = data.length;
+      let totalCanvases = 0;
+
+      data.forEach((item, idx) => {
+        const rawName = item["Student Name"] || item["STUDENT NAME"] || item["Name"] || "N/A";
+        const rawClass = item["Class"] || item["CLASS"] || "N/A";
+        const rawPhoto = item["Photo Link"] || item["Passport Photo URL"] || "";
+        const canvasCount = parseInt(item["Total Canvas Submissions"] || "0", 10);
+        
+        totalCanvases += isNaN(canvasCount) ? 0 : canvasCount;
+
+        const name = String(rawName).toUpperCase();
+        const studentClass = String(rawClass).toUpperCase();
+        const photoUrl = convertDriveUrl(rawPhoto);
+        const serialNo = idx + 1;
+
+        const card = document.createElement('div');
+        card.className = "glass-card rounded-2xl px-3 py-2.5 flex items-center justify-between space-x-3";
+        
+        card.innerHTML = `
+          <div class="flex items-center space-x-2.5 min-w-0">
+            <span class="text-xs font-bold text-gray-400 w-5 text-right shrink-0">#${serialNo}</span>
+            <div class="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden relative flex items-center justify-center border border-white shadow-sm">
+              ${photoUrl ? `<img src="${photoUrl}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-[9px]\' font-bold text-gray-500\'>IMG</span>';">` : `<span class="text-[9px] font-bold text-gray-500">N/A</span>`}
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-xs font-bold text-gray-900 truncate">${name}</h3>
+              <p class="text-[10px] font-semibold text-gray-500 truncate">CLASS: ${studentClass}</p>
+            </div>
+          </div>
+          <div class="shrink-0 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-xl text-center">
+            <span class="text-xs font-extrabold text-blue-700">${canvasCount}</span>
+            <span class="block text-[8px] font-bold text-blue-500 uppercase leading-none mt-0.5">CANVASES</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('statTotalStudents').innerText = totalStudents;
+      document.getElementById('statTotalCanvases').innerText = totalCanvases;
     }
 
     function filterStudents() {
